@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 
 	"github.com/strainy/go-weather/internal/bom"
 	"github.com/strainy/go-weather/internal/handling"
@@ -24,15 +25,23 @@ var (
 	BuildTime string
 )
 
-func main() {
+// print version information and exit
+func printVersion() {
+	fmt.Printf("Running weather version %s - commit %s - build time: %s", Version, Commit, BuildTime)
+	os.Exit(0)
+}
 
-	// This is a cool way to store the build information with the binary!
-	//fmt.Printf("Running weather version %s - commit %s - build time: %s", Version, Commit, BuildTime)
+func main() {
 
 	// Extract command line flags (if any)
 	idvPtr := flag.String("idv", IDV, "The weather station ID to extract observations from (defaults to St. Kilda, Melbourne)")
 	requestTemplatePtr := flag.String("template", requestTemplate, "The template string used to invoke the BOM REST API to capture observations")
+	versionPtr := flag.Bool("version", false, "Print the current version information")
 	flag.Parse()
+
+	if *versionPtr {
+		printVersion()
+	}
 
 	// Retrieve weather observation and print result to stdout
 	t, err := bom.Latest(*requestTemplatePtr, *idvPtr)

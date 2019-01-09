@@ -19,50 +19,14 @@ const (
 	RequestErrorCode = "REQUEST_ERROR"
 )
 
-// ObservationData holds a single forecast data point
-type ObservationData struct {
-	Temp float32 `json:"air_temp"`
-}
-
-// ObservationPayload holds the forecast data from BOM
-type ObservationPayload struct {
-	Observations struct {
-		Notice []map[string]interface{} `json:"notice"`
-		Header []map[string]interface{} `json:"header"`
-		Data   []ObservationData        `json:"data"`
-	} `json:"observations"`
-}
-
-// GoWeatherError represents an unsuccessful weather retrieval error
-type GoWeatherError struct {
-	Code    string
-	Message string
-	Cause   error
-}
-
-func (e *GoWeatherError) Error() string {
-	return fmt.Sprintf("Unable to retrieve weather (%s): %s\nCause:%s", e.Code, e.Message, e.Cause)
-}
-
-// Latest retrieves the latest observation from the BOM given a valid IDV and requestTemplate string
-func Latest(requestTemplate string, idv string) (float32, error) {
-
-	// parse IDV into URL
-	u, err := utils.URLParse(requestTemplate, idv)
-	if err != nil {
-		m := fmt.Sprintf("Unable to parse IDV (%s) into template: %s", idv, requestTemplate)
-		return 0, &GoWeatherError{
-			Code:    ParsingErrorCode,
-			Message: m,
-			Cause:   err,
-		}
-	}
+// Make a request to the BOM API and return the body
+func request(u string) ([]byte, error) {
 
 	// retrieve the data from the API
 	resp, err := http.Get(u)
 	if err != nil {
 		m := fmt.Sprintf("Unable to fetch data from: %s", u)
-		return 0, &GoWeatherError{
+		return nil, &GoWeatherError{
 			Code:    RequestErrorCode,
 			Message: m,
 			Cause:   err,
@@ -74,22 +38,55 @@ func Latest(requestTemplate string, idv string) (float32, error) {
 	rBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		m := fmt.Sprintf("Unable to read response body given by request to BOM API at: %s", u)
-		return 0, &GoWeatherError{
+		return nil, &GoWeatherError{
 			Code:    RequestErrorCode,
 			Message: m,
 			Cause:   err,
 		}
 	}
 
-	// decode the JSON
+	return rBody, nil
+
+}
+
+// Unmarshals JSON into an ObservationPayload struct
+func unmarshalJSON(b []byte) (ObservationPayload, error) {
 	var d ObservationPayload
-	if err := json.Unmarshal(rBody, &d); err != nil {
-		m := fmt.Sprintf("Unable to interpret response payload, verify the JSON structure has not changed.\n\nRaw Payload:\n\n %s", string(rBody))
-		return 0, &GoWeatherError{
+	if err := json.Unmarshal(b, &d); err != nil {
+		m := fmt.Sprintf("Unable to interpret response payload, verify the JSON structure has not changed.\n\nRaw Payload:\n\n %s", string(b))
+		return d, &GoWeatherError{
 			Code:    RequestErrorCode,
 			Message: m,
 			Cause:   err,
 		}
+	}
+	return d, nil
+}
+
+// Latest retrieves the latest observation from the BOM given a valid IDV and requestTemplate string
+func Latest(requestTemplate string, idv string) (float32, error) {
+
+	// Parse IDV into URL
+	u, err := utils.URLParse(requestTemplate, idv)
+	if err != nil {
+		m := fmt.Sprintf("Unable to parse IDV (%s) into template: %s", idv, requestTemplate)
+		return 0, &GoWeatherError{
+			Code:    ParsingErrorCode,
+			Message: m,
+			Cause:   err,
+		}
+	}
+
+	// Make request to the BOM API
+	r, err := request(u)
+	if err != nil {
+		return 0, err
+	}
+
+	// Unmarshal the response payload
+	d, err := unmarshalJSON(r)
+	if err != nil {
+		return 0, err
 	}
 
 	return d.Observations.Data[0].Temp, nil
