@@ -2,7 +2,6 @@ package handling
 
 import (
 	"fmt"
-	"log"
 )
 
 // GoWeatherError represents an unsuccessful weather retrieval error
@@ -17,6 +16,7 @@ func (e *GoWeatherError) Error() string {
 // HandleError is simple wrapper around generic error handling
 func HandleError(err error) {
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
+		//log.Fatal(err)
 	}
 }
