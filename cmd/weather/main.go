@@ -1,12 +1,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/strainy/go-weather/internal/bom"
+	"github.com/strainy/go-weather/internal/handling"
 )
 
-// global config
+// config defaults (can be overriden via CLI arguments)
 const (
 	// the IDV represents the weather station ID to look up observations from
 	IDV = "IDV60901.95936"
@@ -27,14 +29,15 @@ func main() {
 	// This is a cool way to store the build information with the binary!
 	//fmt.Printf("Running weather version %s - commit %s - build time: %s", Version, Commit, BuildTime)
 
-	// Retrieve weather observation and print result to stdout
-	t, err := bom.Latest(requestTemplate, IDV)
+	// Extract command line flags (if any)
+	idvPtr := flag.String("idv", IDV, "The weather station ID to extract observations from (defaults to St. Kilda, Melbourne)")
+	requestTemplatePtr := flag.String("template", requestTemplate, "The template string used to invoke the BOM REST API to capture observations")
+	flag.Parse()
 
-	if err != nil {
-		fmt.Print(err)
-		panic(err)
-	} else {
-		fmt.Printf("%3.1f\u00b0", t)
-	}
+	// Retrieve weather observation and print result to stdout
+	t, err := bom.Latest(*requestTemplatePtr, *idvPtr)
+	handling.HandleError(err)
+
+	fmt.Printf("%3.1f\u00b0", t)
 
 }

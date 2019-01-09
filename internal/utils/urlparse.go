@@ -1,4 +1,4 @@
-package urlparse
+package utils
 
 import (
 	"bytes"
