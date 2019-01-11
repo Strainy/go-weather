@@ -23,7 +23,7 @@ help:
 	@echo "  weather	to build the main binary for current platform"
 
 test:
-	$(GO_VARS) $(GO) test -v
+	$(GO_VARS) $(GO) test -v ./...
 
 weather:
 	$(GO_VARS) $(GO) build -v -ldflags "$(LD_FLAGS)" ./cmd/weather

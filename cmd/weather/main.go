@@ -39,6 +39,7 @@ func main() {
 	versionPtr := flag.Bool("version", false, "Print the current version information")
 	flag.Parse()
 
+	// version is a sentinal flag used to simply print the version info
 	if *versionPtr {
 		printVersion()
 	}
